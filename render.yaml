@@ -1,0 +1,43 @@
+services:
+  - type: web
+    name: api
+    env: python
+    buildCommand: pip install -r services/api/requirements.txt
+    startCommand: cd services/api && uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: sahay-db
+          property: connectionString
+      - key: POSTGRES_USER
+        value: sahay
+      - key: POSTGRES_PASSWORD
+        generateValue: true
+      - key: POSTGRES_DB
+        value: sahay
+      - key: CORS_ORIGINS
+        value: "*"
+      - key: DEBUG
+        value: "False"
+      - key: API_V1_PREFIX
+        value: /api/v1
+    healthCheckPath: /api/v1/health
+
+  - type: web
+    name: web
+    env: static
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    routes:
+      - type: rewrite
+        source: /api/*
+        destination: https://sahay-api.onrender.com/api/*
+    envVars:
+      - key: VITE_API_URL
+        value: /api/v1
+
+databases:
+  - name: sahay-db
+    databaseName: sahay
+    user: sahay
+    plan: free
